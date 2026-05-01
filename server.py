@@ -1,18 +1,25 @@
 """
 YARVIS — Servidor Cloud (Railway)
 """
-import os, json, re, asyncio
+import os, json, re
 from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 import anthropic
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 ANTHROPIC_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-YARVIS_SECRET = os.environ.get("YARVIS_SECRET", "cambia-esto-por-algo-secreto")
+YARVIS_SECRET = os.environ.get("YARVIS_SECRET", "yarvis-secret")
 
 claude = anthropic.Anthropic(api_key=ANTHROPIC_KEY) if ANTHROPIC_KEY else None
 
@@ -27,8 +34,8 @@ Etiquetas especiales para controlar el Mac:
 
 Reglas:
 - Responde SIEMPRE en español, máximo 3-4 frases, sin markdown.
-- Si el Mac no está conectado, puedes conversar e informar igualmente.
-- Para comandos del Mac usa las etiquetas exactas."""
+- Si el Mac no está conectado, conversa igualmente sin mencionar las etiquetas.
+- Usa las etiquetas solo cuando el usuario pida algo que requiera el ordenador."""
 
 def extract_actions(text):
     actions = []
@@ -36,26 +43,15 @@ def extract_actions(text):
         actions.append({"type": "url", "value": url})
     for cmd in re.findall(r"\[CMD:([^\]]+)\]", text):
         actions.append({"type": "cmd", "value": cmd})
-    for app_ in re.findall(r"\[APP:([^\]]+)\]", text):
-        actions.append({"type": "app", "value": app_})
+    for a in re.findall(r"\[APP:([^\]]+)\]", text):
+        actions.append({"type": "app", "value": a})
     return actions
 
 def clean_text(text):
     return re.sub(r"\[(?:URL|CMD|APP):[^\]]+\]", "", text).strip()
 
-# ── Buscar index.html en raíz o en static/ ────────────────────────────────────
-BASE = Path(__file__).parent
-def find_index():
-    for p in [BASE / "static" / "index.html", BASE / "index.html"]:
-        if p.exists(): return p
-    return None
-
-def find_manifest():
-    for p in [BASE / "static" / "manifest.json", BASE / "manifest.json"]:
-        if p.exists(): return p
-    return None
-
 # ── API ───────────────────────────────────────────────────────────────────────
+
 class ChatRequest(BaseModel):
     message: str
     session_id: str = "default"
@@ -66,7 +62,7 @@ async def chat(req: ChatRequest):
     if req.secret != YARVIS_SECRET:
         raise HTTPException(status_code=401, detail="Clave incorrecta")
     if not claude:
-        raise HTTPException(status_code=500, detail="API key no configurada en Railway")
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada en Railway")
 
     hist = histories.setdefault(req.session_id, [])
     hist.append({"role": "user", "content": req.message})
@@ -99,6 +95,10 @@ async def chat(req: ChatRequest):
 
     return {"reply": display, "actions": actions, "mac_online": bool(agents)}
 
+@app.get("/api/status")
+async def status():
+    return {"mac_online": bool(agents), "sessions": len(histories)}
+
 @app.delete("/api/history/{session_id}")
 async def clear_history(session_id: str, secret: str = ""):
     if secret != YARVIS_SECRET:
@@ -106,11 +106,8 @@ async def clear_history(session_id: str, secret: str = ""):
     histories.pop(session_id, None)
     return {"ok": True}
 
-@app.get("/api/status")
-async def status():
-    return {"mac_online": bool(agents), "sessions": len(histories)}
-
 # ── WebSocket agente Mac ──────────────────────────────────────────────────────
+
 @app.websocket("/ws/agent")
 async def agent_ws(websocket: WebSocket):
     if websocket.query_params.get("secret", "") != YARVIS_SECRET:
@@ -125,19 +122,27 @@ async def agent_ws(websocket: WebSocket):
     except WebSocketDisconnect:
         agents.pop(aid, None)
 
-# ── Servir archivos estáticos ─────────────────────────────────────────────────
-static_dir = BASE / "static"
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+# ── Servir PWA ────────────────────────────────────────────────────────────────
+
+BASE = Path(__file__).parent
+
+def find_file(name):
+    for p in [BASE / "static" / name, BASE / name]:
+        if p.exists():
+            return p
+    return None
 
 @app.get("/manifest.json")
 async def manifest():
-    p = find_manifest()
-    if p: return FileResponse(str(p))
+    p = find_file("manifest.json")
+    if p:
+        return FileResponse(str(p))
     raise HTTPException(404)
 
+@app.get("/")
 @app.get("/{full_path:path}")
-async def serve_pwa(full_path: str):
-    p = find_index()
-    if p: return FileResponse(str(p))
-    return {"status": "Yarvis server running — sube index.html al repo"}
+async def serve_pwa(full_path: str = ""):
+    p = find_file("index.html")
+    if p:
+        return FileResponse(str(p), media_type="text/html")
+    return JSONResponse({"status": "Yarvis running — sube index.html al repo"})
