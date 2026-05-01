@@ -6,414 +6,595 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Yarvis">
-<meta name="theme-color" content="#090c12">
-<link rel="manifest" href="/static/manifest.json">
-<link rel="apple-touch-icon" href="/static/icon.png">
+<meta name="theme-color" content="#000008">
+<link rel="manifest" href="/manifest.json">
 <title>Yarvis</title>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
 :root{
-  --bg:#090c12;--bg2:#0e1420;--bg3:#141c2e;
-  --accent:#00e5c8;--accent2:#0085ff;
-  --text:#e2eaff;--muted:#4a5680;
-  --danger:#ff4d6a;--warn:#f59e0b;
-  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --c1:#00ffe7;--c2:#0066ff;--c3:#7700ff;
+  --bg:#000008;--bg2:#03050f;
+  --text:#c8e8ff;--muted:#2a3d6e;
 }
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Exo 2',sans-serif}
 
-/* Layout */
-.app{display:flex;flex-direction:column;height:100dvh;max-width:480px;margin:0 auto;padding:0}
+/* Star background */
+.stars{position:fixed;inset:0;overflow:hidden;z-index:0}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.1;transform:scale(.8)}50%{opacity:var(--op,.6);transform:scale(1)}}
 
-/* Header */
-.hdr{display:flex;align-items:center;justify-content:space-between;
-  padding:14px 20px 10px;flex-shrink:0;
-  padding-top:calc(14px + env(safe-area-inset-top,0px))}
-.logo{font-size:18px;font-weight:700;letter-spacing:.2em;color:var(--accent)}
-.status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:background .4s}
-.status-dot.on{background:var(--accent)}
-.status-dot.processing{background:var(--accent2);animation:blink .6s infinite}
-.mac-badge{font-size:10px;letter-spacing:.1em;color:var(--muted);display:flex;align-items:center;gap:5px}
-.mac-badge.online{color:var(--accent)}
+/* Grid overlay */
+.grid{position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(0,255,231,.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(0,255,231,.025) 1px,transparent 1px);
+  background-size:60px 60px}
 
-/* Messages */
-.msgs{flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;
-  gap:10px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-.msgs::-webkit-scrollbar{width:3px}
-.msgs::-webkit-scrollbar-thumb{background:var(--muted);border-radius:2px}
+/* App layout */
+.app{position:relative;z-index:1;display:flex;flex-direction:column;
+  align-items:center;height:100dvh;
+  padding-top:calc(env(safe-area-inset-top,0px) + 10px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}
 
-.msg{display:flex;flex-direction:column;gap:3px;max-width:88%;animation:fadeUp .25s ease}
-.msg.user{align-self:flex-end;align-items:flex-end}
-.msg.bot{align-self:flex-start;align-items:flex-start}
-.bubble{padding:10px 14px;border-radius:18px;font-size:15px;line-height:1.5;
-  word-break:break-word}
-.msg.user .bubble{background:var(--accent2);color:#fff;border-bottom-right-radius:4px}
-.msg.bot  .bubble{background:var(--bg2);color:var(--text);border-bottom-left-radius:4px;
-  border:1px solid rgba(0,229,200,.08)}
-.action-tag{font-size:11px;color:var(--warn);padding:3px 8px;background:rgba(245,158,11,.08);
-  border-radius:8px;margin-top:3px;align-self:flex-start}
+/* Title */
+.title{font-family:'Orbitron',monospace;font-weight:900;font-size:22px;
+  letter-spacing:.35em;color:var(--c1);text-shadow:0 0 20px rgba(0,255,231,.5);
+  margin-bottom:4px}
+.subtitle{font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
 
-/* Thinking dots */
-.thinking .bubble{display:flex;gap:5px;align-items:center;padding:12px 16px}
-.thinking .bubble span{width:6px;height:6px;border-radius:50%;background:var(--accent);
-  animation:bounce .9s ease-in-out infinite}
-.thinking .bubble span:nth-child(2){animation-delay:.15s}
-.thinking .bubble span:nth-child(3){animation-delay:.3s}
+/* Status row */
+.statusrow{display:flex;align-items:center;gap:8px;margin:8px 0 0}
+.mac-pill{display:flex;align-items:center;gap:5px;padding:3px 10px;
+  border-radius:20px;border:1px solid var(--muted);font-size:10px;
+  letter-spacing:.1em;color:var(--muted);transition:all .4s}
+.mac-pill.on{border-color:rgba(0,255,231,.4);color:var(--c1)}
+.mac-dot{width:5px;height:5px;border-radius:50%;background:currentColor;
+  animation:blinkDot 2s ease-in-out infinite}
+@keyframes blinkDot{0%,100%{opacity:.4}50%{opacity:1}}
 
-/* Bottom area */
-.bottom{flex-shrink:0;padding:8px 16px;
-  padding-bottom:calc(8px + var(--safe-bottom));
-  background:var(--bg);border-top:1px solid rgba(255,255,255,.04)}
+/* ORB area */
+.orb-area{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:0;width:100%}
 
-/* Mic button */
-.mic-row{display:flex;justify-content:center;align-items:center;gap:16px;margin-bottom:10px}
-.mic-btn{width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;
-  background:var(--bg3);border:1.5px solid rgba(0,229,200,.25);
-  display:flex;align-items:center;justify-content:center;transition:all .2s;
-  outline:none;position:relative;overflow:hidden;flex-shrink:0}
-.mic-btn:active,.mic-btn.recording{background:rgba(0,229,200,.12);
-  border-color:var(--accent);transform:scale(1.05)}
-.mic-btn.recording{animation:micPulse 1.2s ease-in-out infinite}
-.mic-btn svg{width:28px;height:28px;color:var(--accent);transition:color .2s}
-.mic-btn.recording svg{color:var(--accent)}
+.orb-container{position:relative;width:260px;height:260px;
+  display:flex;align-items:center;justify-content:center}
+
+/* Outer rotating rings */
+.ring{position:absolute;border-radius:50%;border:1px solid transparent}
+.ring1{inset:0;border-color:rgba(0,255,231,.12);
+  animation:spin 20s linear infinite}
+.ring1::before{content:'';position:absolute;top:-3px;left:50%;
+  width:6px;height:6px;border-radius:50%;background:var(--c1);
+  box-shadow:0 0 8px var(--c1);transform:translateX(-50%)}
+.ring2{inset:14px;border-color:rgba(0,102,255,.15);
+  animation:spin 14s linear infinite reverse}
+.ring2::before{content:'';position:absolute;bottom:-2.5px;right:20px;
+  width:5px;height:5px;border-radius:50%;background:var(--c2);
+  box-shadow:0 0 6px var(--c2)}
+.ring3{inset:28px;border-color:rgba(119,0,255,.12);
+  animation:spin 9s linear infinite;border-style:dashed}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* Radar sweep */
+.radar{position:absolute;inset:40px;border-radius:50%;overflow:hidden;opacity:.15}
+.radar-line{position:absolute;top:50%;left:50%;width:50%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--c1));
+  transform-origin:0 50%;animation:radarSpin 4s linear infinite}
+@keyframes radarSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* Main orb button */
+.orb{position:absolute;inset:44px;border-radius:50%;cursor:pointer;
+  background:radial-gradient(circle at 35% 35%,#0a1a3a,#000510);
+  border:1.5px solid rgba(0,255,231,.2);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .3s;outline:none;overflow:hidden}
+.orb::before{content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(0,255,231,.08),transparent 60%)}
+
+/* Orb states */
+.orb.idle{}
+.orb.wake{border-color:rgba(0,255,231,.6);
+  box-shadow:0 0 30px rgba(0,255,231,.2),inset 0 0 30px rgba(0,255,231,.05);
+  animation:orbBreath 3s ease-in-out infinite}
+.orb.cmd{border-color:rgba(255,77,106,.7);
+  box-shadow:0 0 40px rgba(255,77,106,.3),inset 0 0 30px rgba(255,77,106,.08);
+  animation:orbPulse .8s ease-in-out infinite}
+.orb.processing{border-color:rgba(0,102,255,.6);
+  box-shadow:0 0 30px rgba(0,102,255,.2);
+  animation:orbSpin 2s linear infinite}
+.orb.speaking{border-color:rgba(119,0,255,.7);
+  box-shadow:0 0 40px rgba(119,0,255,.3);
+  animation:orbBreath .6s ease-in-out infinite}
+
+@keyframes orbBreath{0%,100%{box-shadow:0 0 20px rgba(0,255,231,.15),inset 0 0 20px rgba(0,255,231,.04)}
+  50%{box-shadow:0 0 50px rgba(0,255,231,.35),inset 0 0 40px rgba(0,255,231,.1)}}
+@keyframes orbPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,77,106,.5)}
+  60%{box-shadow:0 0 0 20px rgba(255,77,106,0)}}
+@keyframes orbSpin{0%{box-shadow:0 0 30px rgba(0,102,255,.1),4px 0 0 rgba(0,102,255,.5) inset}
+  100%{box-shadow:0 0 30px rgba(0,102,255,.1),-4px 0 0 rgba(0,102,255,.5) inset}}
+
+/* Canvas waveform inside orb */
+#waveCanvas{position:absolute;inset:0;border-radius:50%;opacity:.7}
+
+/* Orb icon */
+.orb-icon{position:relative;z-index:2;transition:all .3s}
+.orb-icon svg{width:36px;height:36px;color:var(--c1);
+  filter:drop-shadow(0 0 8px rgba(0,255,231,.5));transition:color .3s}
+.orb.cmd .orb-icon svg{color:#ff4d6a;filter:drop-shadow(0 0 8px rgba(255,77,106,.5))}
+.orb.processing .orb-icon svg{color:var(--c2);filter:drop-shadow(0 0 8px rgba(0,102,255,.5))}
+.orb.speaking .orb-icon svg{color:#a855f7;filter:drop-shadow(0 0 8px rgba(168,85,247,.5))}
+
+/* Response text above orb */
+.response-bubble{position:absolute;bottom:calc(100% + 16px);left:50%;transform:translateX(-50%);
+  width:280px;text-align:center;font-size:14px;line-height:1.6;color:var(--text);
+  background:rgba(3,5,15,.85);border:1px solid rgba(0,255,231,.15);
+  border-radius:16px;padding:12px 16px;
+  opacity:0;transition:opacity .4s;pointer-events:none;backdrop-filter:blur(8px)}
+.response-bubble.show{opacity:1}
 
 /* State label */
-.state-lbl{font-size:12px;color:var(--muted);text-align:center;
-  letter-spacing:.08em;min-height:18px;transition:color .3s}
-.state-lbl.active{color:var(--accent)}
+.state-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:16px}
+.state-text{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:.2em;
+  color:var(--muted);text-transform:uppercase;transition:color .4s;min-height:16px}
+.state-text.wake{color:var(--c1);text-shadow:0 0 10px rgba(0,255,231,.4)}
+.state-text.cmd{color:#ff4d6a;text-shadow:0 0 10px rgba(255,77,106,.4)}
+.state-text.processing{color:var(--c2);text-shadow:0 0 10px rgba(0,102,255,.4)}
+.state-text.speaking{color:#a855f7;text-shadow:0 0 10px rgba(168,85,247,.4)}
+
+/* Scan line */
+.scanline{width:180px;height:1px;background:linear-gradient(90deg,transparent,var(--c1),transparent);
+  opacity:0;transition:opacity .4s;animation:scanMove 2s ease-in-out infinite}
+.scanline.show{opacity:.4}
+@keyframes scanMove{0%,100%{transform:scaleX(.3)}50%{transform:scaleX(1)}}
+
+/* Bottom area */
+.bottom-area{width:100%;max-width:400px;padding:0 24px;display:flex;flex-direction:column;gap:10px}
 
 /* Text input */
 .input-row{display:flex;gap:8px;align-items:center}
-.txt-in{flex:1;background:var(--bg3);border:1px solid rgba(0,229,200,.1);
-  border-radius:22px;padding:10px 16px;color:var(--text);font-size:15px;
-  outline:none;-webkit-appearance:none;transition:border-color .2s}
+.txt-in{flex:1;background:rgba(3,5,15,.8);
+  border:1px solid rgba(0,255,231,.12);border-radius:24px;
+  padding:11px 18px;color:var(--text);font-size:14px;font-family:'Exo 2',sans-serif;
+  outline:none;-webkit-appearance:none;transition:border-color .2s;
+  backdrop-filter:blur(8px)}
 .txt-in::placeholder{color:var(--muted)}
-.txt-in:focus{border-color:rgba(0,229,200,.3)}
-.send-btn{width:40px;height:40px;border-radius:50%;background:var(--accent);
-  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;transition:opacity .2s}
-.send-btn:active{opacity:.7}
-.send-btn svg{width:18px;height:18px}
+.txt-in:focus{border-color:rgba(0,255,231,.35)}
+.send-btn{width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  background:rgba(0,255,231,.1);border:1px solid rgba(0,255,231,.3);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all .2s}
+.send-btn:active{background:rgba(0,255,231,.2)}
+.send-btn svg{width:18px;height:18px;color:var(--c1)}
 
-/* Config panel */
-.cfg-btn{width:36px;height:36px;border-radius:50%;background:var(--bg3);
-  border:1px solid rgba(255,255,255,.06);display:flex;align-items:center;
-  justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0}
-.cfg-btn:active{background:var(--bg2)}
-.cfg-btn svg{width:16px;height:16px;color:var(--muted)}
+/* Settings button */
+.settings-btn{position:fixed;top:calc(env(safe-area-inset-top,0px)+10px);right:16px;
+  z-index:50;width:36px;height:36px;border-radius:50%;
+  background:rgba(3,5,15,.7);border:1px solid rgba(0,255,231,.1);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  backdrop-filter:blur(8px)}
+.settings-btn svg{width:15px;height:15px;color:var(--muted)}
 
-.cfg-overlay{display:none;position:fixed;inset:0;background:rgba(9,12,18,.9);
-  z-index:100;flex-direction:column;justify-content:flex-end}
+/* Config sheet */
+.cfg-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,8,.92);
+  z-index:100;flex-direction:column;justify-content:flex-end;backdrop-filter:blur(4px)}
 .cfg-overlay.open{display:flex}
-.cfg-sheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:24px 20px;
-  padding-bottom:calc(24px + var(--safe-bottom));border-top:1px solid rgba(0,229,200,.1)}
-.cfg-title{font-size:14px;font-weight:600;letter-spacing:.1em;color:var(--accent);
-  margin-bottom:16px;text-align:center}
-.cfg-field{margin-bottom:12px}
-.cfg-label{font-size:11px;color:var(--muted);letter-spacing:.12em;margin-bottom:5px}
-.cfg-input{width:100%;background:var(--bg3);border:1px solid rgba(255,255,255,.08);
-  border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;
-  font-family:monospace;outline:none;-webkit-appearance:none}
-.cfg-input:focus{border-color:rgba(0,229,200,.3)}
-.cfg-save{width:100%;padding:13px;border-radius:12px;background:var(--accent);
-  border:none;color:#090c12;font-size:15px;font-weight:600;cursor:pointer;
-  margin-top:8px;letter-spacing:.05em}
-.cfg-close{position:absolute;top:20px;right:20px;width:30px;height:30px;
-  border-radius:50%;background:var(--bg3);border:none;color:var(--muted);
-  cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
-
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@keyframes bounce{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,229,200,.3)}60%{box-shadow:0 0 0 14px rgba(0,229,200,0)}}
+.cfg-sheet{background:#060b1a;border-radius:24px 24px 0 0;padding:28px 24px;
+  padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid rgba(0,255,231,.15);position:relative}
+.cfg-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:.3em;
+  color:var(--c1);margin-bottom:20px;text-align:center}
+.cfg-field{margin-bottom:14px}
+.cfg-label{font-size:10px;color:var(--muted);letter-spacing:.15em;
+  text-transform:uppercase;margin-bottom:6px}
+.cfg-input{width:100%;background:rgba(0,255,231,.04);
+  border:1px solid rgba(0,255,231,.12);border-radius:12px;
+  padding:11px 14px;color:var(--text);font-size:13px;font-family:monospace;
+  outline:none;-webkit-appearance:none;transition:border-color .2s}
+.cfg-input:focus{border-color:rgba(0,255,231,.35)}
+.cfg-save{width:100%;padding:14px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(0,255,231,.15),rgba(0,102,255,.15));
+  border:1px solid rgba(0,255,231,.3);
+  color:var(--c1);font-family:'Orbitron',monospace;font-size:12px;
+  letter-spacing:.15em;cursor:pointer;margin-top:4px;transition:all .2s}
+.cfg-save:active{background:rgba(0,255,231,.2)}
+.cfg-close{position:absolute;top:16px;right:16px;width:30px;height:30px;
+  border-radius:50%;background:rgba(0,255,231,.06);
+  border:1px solid rgba(0,255,231,.1);color:var(--muted);cursor:pointer;
+  font-size:14px;display:flex;align-items:center;justify-content:center}
+.cfg-error{font-size:11px;color:#ff4d6a;margin-top:8px;text-align:center;display:none}
 </style>
 </head>
 <body>
 
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+<div class="grid"></div>
+
+<button class="settings-btn" onclick="openCfg()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="12" cy="12" r="3"/>
+    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+  </svg>
+</button>
+
 <div class="app">
-  <div class="hdr">
-    <div class="logo">YARVIS</div>
-    <div class="mac-badge" id="macBadge">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="macLabel">Mac desconectado</span>
-    </div>
-    <button class="cfg-btn" onclick="openCfg()" aria-label="Configuración">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
-      </svg>
-    </button>
-  </div>
-
-  <div class="msgs" id="msgs">
-    <div class="msg bot">
-      <div class="bubble">Hola, soy Yarvis. Pulsa el micrófono o escribe para hablar conmigo.</div>
+  <div class="title">YARVIS</div>
+  <div class="subtitle">Sistema de IA — v2.0</div>
+  <div class="statusrow">
+    <div class="mac-pill" id="macPill">
+      <div class="mac-dot"></div>
+      <span id="macLabel">Mac offline</span>
     </div>
   </div>
 
-  <div class="bottom">
-    <div class="mic-row">
-      <button class="mic-btn" id="micBtn" onclick="toggleMic()" aria-label="Micrófono">
-        <svg id="micIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="9" y="2" width="6" height="12" rx="3"/>
-          <path d="M5 10c0 3.866 3.134 7 7 7s7-3.134 7-7" stroke-linecap="round"/>
-          <line x1="12" y1="17" x2="12" y2="21" stroke-linecap="round"/>
-          <line x1="8" y1="21" x2="16" y2="21" stroke-linecap="round"/>
-        </svg>
+  <div class="orb-area">
+    <div class="orb-container">
+      <div class="ring ring1"></div>
+      <div class="ring ring2"></div>
+      <div class="ring ring3"></div>
+      <div class="radar"><div class="radar-line"></div></div>
+      <button class="orb idle" id="orb" onclick="orbClick()">
+        <canvas id="waveCanvas" width="172" height="172"></canvas>
+        <div class="orb-icon" id="orbIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="9" y="2" width="6" height="12" rx="3"/>
+            <path d="M5 10c0 3.866 3.134 7 7 7s7-3.134 7-7" stroke-linecap="round"/>
+            <line x1="12" y1="17" x2="12" y2="21" stroke-linecap="round"/>
+            <line x1="8" y1="21" x2="16" y2="21" stroke-linecap="round"/>
+          </svg>
+        </div>
       </button>
+      <!-- Response appears above orb -->
+      <div class="response-bubble" id="responseBubble"></div>
     </div>
-    <div class="state-lbl" id="stateLbl">Toca para hablar</div>
-    <div style="height:8px"></div>
+
+    <div class="state-wrap">
+      <div class="state-text" id="stateTxt">SISTEMA LISTO</div>
+      <div class="scanline" id="scanline"></div>
+    </div>
+  </div>
+
+  <div class="bottom-area">
     <div class="input-row">
-      <input class="txt-in" id="txtIn" type="text" placeholder="O escribe aquí…"
-             enterkeyhint="send" onkeydown="if(event.key==='Enter')sendText()">
-      <button class="send-btn" onclick="sendText()" aria-label="Enviar">
-        <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-        </svg>
+      <input class="txt-in" id="txtIn" type="text"
+             placeholder="Escribe un comando…"
+             enterkeyhint="send"
+             onkeydown="if(event.key==='Enter')sendText()">
+      <button class="send-btn" onclick="sendText()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
       </button>
     </div>
   </div>
 </div>
 
-<!-- Config overlay -->
+<!-- Config -->
 <div class="cfg-overlay" id="cfgOverlay">
-  <div class="cfg-sheet" style="position:relative">
+  <div class="cfg-sheet">
     <button class="cfg-close" onclick="closeCfg()">✕</button>
-    <div class="cfg-title">CONFIGURACIÓN</div>
+    <div class="cfg-title">// CONFIGURACIÓN</div>
     <div class="cfg-field">
-      <div class="cfg-label">URL DEL SERVIDOR</div>
+      <div class="cfg-label">Servidor Railway</div>
       <input class="cfg-input" id="cfgUrl" type="url"
-             placeholder="https://tu-app.up.railway.app">
+             placeholder="https://xxx.up.railway.app">
     </div>
     <div class="cfg-field">
-      <div class="cfg-label">CLAVE SECRETA</div>
+      <div class="cfg-label">Clave secreta</div>
       <input class="cfg-input" id="cfgSecret" type="password"
-             placeholder="tu-clave-secreta">
+             placeholder="YARVIS_SECRET de Railway">
     </div>
-    <button class="cfg-save" onclick="saveConfig()">Guardar y conectar</button>
+    <div class="cfg-error" id="cfgError"></div>
+    <button class="cfg-save" onclick="saveConfig()">INICIALIZAR SISTEMA</button>
   </div>
 </div>
 
 <script>
-const SESSION = 'yarvis-' + Math.random().toString(36).slice(2,8);
+// ── Stars ─────────────────────────────────────────────────────────────────────
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const size = Math.random() * 2 + .5;
+  s.style.cssText = `width:${size}px;height:${size}px;
+    left:${Math.random()*100}%;top:${Math.random()*100}%;
+    --d:${2+Math.random()*4}s;--op:${.3+Math.random()*.6};
+    animation-delay:${Math.random()*4}s`;
+  starsEl.appendChild(s);
+}
+
+// ── Config ────────────────────────────────────────────────────────────────────
+const SESSION = 'yarvis-' + (localStorage.getItem('sid') || (()=>{
+  const s = Math.random().toString(36).slice(2,8);
+  localStorage.setItem('sid',s); return s;})());
 let serverUrl = localStorage.getItem('yarvis_url') || '';
 let secret    = localStorage.getItem('yarvis_secret') || '';
-let isRecording = false;
-let recognition = null;
-let processing  = false;
-let macOnline   = false;
+let macOnline = false;
+let processing = false;
+let responseTimer = null;
+
+// ── Waveform ──────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('waveCanvas');
+const ctx2d  = canvas.getContext('2d');
+let animFrame = null;
+let analyser = null, dataArray = null;
+
+function drawIdle() {
+  const W=canvas.width, H=canvas.height, cx=W/2, cy=H/2;
+  ctx2d.clearRect(0,0,W,H);
+  const t = Date.now()/1200;
+  for(let i=0;i<3;i++){
+    const r = 18+i*16+Math.sin(t+i*1.2)*3;
+    ctx2d.strokeStyle=`rgba(0,255,231,${.06-i*.015})`;
+    ctx2d.lineWidth=1;
+    ctx2d.beginPath();ctx2d.arc(cx,cy,r,0,Math.PI*2);ctx2d.stroke();
+  }
+  animFrame = requestAnimationFrame(drawIdle);
+}
+
+function drawWave(color='rgba(0,255,231,0.7)') {
+  if(!analyser){animFrame=requestAnimationFrame(()=>drawWave(color));return;}
+  analyser.getByteTimeDomainData(dataArray);
+  const W=canvas.width, H=canvas.height;
+  ctx2d.clearRect(0,0,W,H);
+  ctx2d.lineWidth=1.5;ctx2d.strokeStyle=color;
+  ctx2d.beginPath();
+  const sl=W/dataArray.length;
+  let x=0;
+  for(let i=0;i<dataArray.length;i++){
+    const v=dataArray[i]/128, y=(v*H)/2;
+    i===0?ctx2d.moveTo(x,y):ctx2d.lineTo(x,y);
+    x+=sl;
+  }
+  ctx2d.lineTo(W,H/2);ctx2d.stroke();
+  animFrame = requestAnimationFrame(()=>drawWave(color));
+}
+
+async function startMicViz() {
+  if(analyser) return;
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const ac = new AudioContext();
+    analyser = ac.createAnalyser();
+    analyser.fftSize = 256;
+    dataArray = new Uint8Array(analyser.frequencyBinCount);
+    ac.createMediaStreamSource(stream).connect(analyser);
+  }catch(e){}
+}
+
+cancelAnimationFrame(animFrame);
+drawIdle();
+
+// ── State machine ─────────────────────────────────────────────────────────────
+// States: idle | wake | cmd | processing | speaking
+let STATE = 'idle';
+
+function setState(s, label) {
+  STATE = s;
+  const orb = document.getElementById('orb');
+  const txt = document.getElementById('stateTxt');
+  const scan = document.getElementById('scanline');
+
+  orb.className = 'orb ' + s;
+  txt.className = 'state-text ' + (s !== 'idle' ? s : '');
+  txt.textContent = label || s.toUpperCase();
+  scan.className = 'scanline' + (s !== 'idle' ? ' show' : '');
+
+  cancelAnimationFrame(animFrame);
+  if(s === 'idle') { drawIdle(); }
+  else if(s === 'wake') { drawWave('rgba(0,255,231,0.5)'); }
+  else if(s === 'cmd') { drawWave('rgba(255,77,106,0.7)'); }
+  else if(s === 'processing') { drawWave('rgba(0,102,255,0.6)'); }
+  else if(s === 'speaking') { drawWave('rgba(168,85,247,0.7)'); }
+}
+
+// ── Response display ──────────────────────────────────────────────────────────
+function showResponse(text) {
+  const el = document.getElementById('responseBubble');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(responseTimer);
+  // Keep visible while speaking, then fade
+  responseTimer = setTimeout(() => el.classList.remove('show'), Math.max(4000, text.length * 60));
+}
+
+function hideResponse() {
+  document.getElementById('responseBubble').classList.remove('show');
+}
 
 // ── Speech Recognition ────────────────────────────────────────────────────────
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, isActive = false;
+let cmdTimer2 = null, cmdBuf = '';
+const WAKE = ['yarvis','jarvis','yarbi','jarbi','oye yarvis'];
 
-function toggleMic() {
-  if (!SR) { addMsg('bot','Tu navegador no soporta reconocimiento de voz. Usa el campo de texto.'); return; }
-  if (!serverUrl) { openCfg(); return; }
-  if (isRecording) stopRec();
-  else startRec();
+function startSR() {
+  if(!SR) return;
+  if(rec) { try{rec.abort();}catch(e){} }
+  rec = new SR();
+  rec.lang='es-ES'; rec.continuous=true; rec.interimResults=true;
+
+  rec.onresult = e => {
+    let interim='', final='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      e.results[i].isFinal ? final+=t : interim+=t;
+    }
+    const txt=(final||interim).toLowerCase().trim();
+
+    if(STATE==='wake'){
+      if(WAKE.some(w=>txt.includes(w))){
+        cmdBuf='';
+        setState('cmd','ESCUCHANDO…');
+        speak('Dime');
+      }
+    } else if(STATE==='cmd' && !processing){
+      let clean=txt;
+      WAKE.forEach(w=>{clean=clean.replace(new RegExp(w,'gi'),'').trim();});
+      cmdBuf=clean;
+      if(final && clean.length>1){
+        clearTimeout(cmdTimer2);
+        cmdTimer2=setTimeout(()=>{
+          if(cmdBuf && !processing){
+            const cmd=cmdBuf; cmdBuf='';
+            sendMessage(cmd);
+          }
+        }, 1200);
+      }
+    }
+  };
+
+  rec.onerror = e => {
+    if(e.error==='not-allowed'){
+      setState('idle','MICRÓFONO DENEGADO');
+      isActive=false; return;
+    }
+    if(isActive) setTimeout(startSR, 800);
+  };
+
+  rec.onend = () => {
+    if(isActive && STATE!=='processing') setTimeout(startSR, 200);
+  };
+
+  try{ rec.start(); }catch(e){}
 }
 
-function startRec() {
-  recognition = new SR();
-  recognition.lang = 'es-ES';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-
-  recognition.onstart = () => {
-    isRecording = true;
-    document.getElementById('micBtn').classList.add('recording');
-    setStateLbl('Escuchando…', true);
-  };
-
-  recognition.onresult = (e) => {
-    const text = e.results[0][0].transcript.trim();
-    if (text) sendMessage(text);
-  };
-
-  recognition.onerror = (e) => {
-    stopRec();
-    if (e.error === 'no-speech') setStateLbl('No escuché nada, inténtalo de nuevo');
-    else if (e.error === 'not-allowed') setStateLbl('Permiso de micrófono denegado');
-    else setStateLbl('Error de micrófono');
-  };
-
-  recognition.onend = () => {
-    isRecording = false;
-    document.getElementById('micBtn').classList.remove('recording');
-    if (!processing) setStateLbl('Toca para hablar');
-  };
-
-  recognition.start();
-}
-
-function stopRec() {
-  recognition && recognition.stop();
-  isRecording = false;
-  document.getElementById('micBtn').classList.remove('recording');
+function orbClick() {
+  if(!serverUrl){ openCfg(); return; }
+  if(!isActive){
+    isActive=true;
+    startMicViz();
+    setState('wake','DI "YARVIS"');
+    startSR();
+  } else {
+    isActive=false;
+    try{rec&&rec.abort();}catch(e){}
+    setState('idle','SISTEMA LISTO');
+    hideResponse();
+  }
 }
 
 // ── Send message ──────────────────────────────────────────────────────────────
 async function sendText() {
-  const inp = document.getElementById('txtIn');
-  const t = inp.value.trim();
-  if (!t || processing) return;
-  inp.value = '';
+  const inp=document.getElementById('txtIn');
+  const t=inp.value.trim();
+  if(!t||processing) return;
+  inp.value='';
   sendMessage(t);
 }
 
 async function sendMessage(text) {
-  if (!serverUrl) { openCfg(); return; }
-  if (processing) return;
-  processing = true;
-  addMsg('user', text);
-  setStateLbl('Procesando…', true);
-  setDot('processing');
+  if(!serverUrl){openCfg();return;}
+  if(processing) return;
+  processing=true;
+  setState('processing','PROCESANDO…');
 
-  const thinkId = addThinking();
-
-  try {
-    const res = await fetch(serverUrl.replace(/\/$/, '') + '/api/chat', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({message: text, session_id: SESSION, secret})
+  try{
+    const res = await fetch(serverUrl.replace(/\/$/,'')+'/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:text,session_id:SESSION,secret})
     });
 
-    removeThinking(thinkId);
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({detail: 'Error desconocido'}));
-      if (res.status === 401) openCfg();
-      addMsg('bot', 'Error: ' + (err.detail || res.statusText));
+    if(!res.ok){
+      const err=await res.json().catch(()=>({detail:res.statusText}));
+      if(res.status===401){
+        showCfgError('Clave incorrecta — revisa YARVIS_SECRET');
+        openCfg(); return;
+      }
+      setState('idle','ERROR: '+res.status);
+      showResponse('Error: '+(err.detail||res.statusText));
       return;
     }
 
-    const data = await res.json();
-    addMsg('bot', data.reply, data.actions || []);
-    updateMacStatus(data.mac_online);
-    speak(data.reply);
+    const data=await res.json();
+    updateMac(data.mac_online);
+    setState('speaking','RESPONDIENDO…');
+    showResponse(data.reply);
 
-  } catch(e) {
-    removeThinking(thinkId);
-    addMsg('bot', 'No puedo conectar con el servidor. Comprueba la URL en configuración.');
-  } finally {
-    processing = false;
-    setStateLbl('Toca para hablar');
-    setDot(macOnline ? 'on' : '');
+    if(data.actions?.length){
+      data.actions.forEach(a=>{
+        // Brief action flash
+      });
+    }
+
+    await speakAsync(data.reply);
+
+  }catch(e){
+    setState('idle','SIN CONEXIÓN');
+    showResponse('No puedo conectar con el servidor');
+  }finally{
+    processing=false;
+    if(isActive) setState('wake','DI "YARVIS"');
+    else setState('idle','SISTEMA LISTO');
   }
 }
 
-// ── Speech Synthesis ──────────────────────────────────────────────────────────
-function speak(text) {
-  if (!window.speechSynthesis) return;
-  speechSynthesis.cancel();
-  const utt = new SpeechSynthesisUtterance(text.slice(0, 400));
-  utt.lang = 'es-ES';
-  utt.rate = 1.05;
-  const voices = speechSynthesis.getVoices();
-  const esVoice = voices.find(v => v.lang.startsWith('es'));
-  if (esVoice) utt.voice = esVoice;
-  speechSynthesis.speak(utt);
+// ── TTS ───────────────────────────────────────────────────────────────────────
+function speakAsync(text) {
+  return new Promise(res=>{
+    if(!window.speechSynthesis){res();return;}
+    speechSynthesis.cancel();
+    const utt=new SpeechSynthesisUtterance(text.slice(0,400));
+    utt.lang='es-ES'; utt.rate=1.05;
+    const voices=speechSynthesis.getVoices();
+    const esv=voices.find(v=>v.lang.startsWith('es'));
+    if(esv) utt.voice=esv;
+    utt.onend=res; utt.onerror=res;
+    speechSynthesis.speak(utt);
+    setTimeout(res,15000);
+  });
+}
+function speak(t){speakAsync(t);}
+
+// ── Mac status ────────────────────────────────────────────────────────────────
+function updateMac(on){
+  macOnline=on;
+  const p=document.getElementById('macPill');
+  const l=document.getElementById('macLabel');
+  p.className='mac-pill'+(on?' on':'');
+  l.textContent=on?'Mac online':'Mac offline';
 }
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
-function addMsg(role, text, actions=[]) {
-  const div = document.getElementById('msgs');
-  const wrap = document.createElement('div');
-  wrap.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble';
-  bubble.textContent = text;
-  wrap.appendChild(bubble);
-  if (actions.length) {
-    actions.forEach(a => {
-      const tag = document.createElement('div');
-      tag.className = 'action-tag';
-      const icons = {url:'🌐',cmd:'⚡',app:'📂'};
-      tag.textContent = (icons[a.type]||'▸') + ' ' + a.value;
-      wrap.appendChild(tag);
-    });
-  }
-  div.appendChild(wrap);
-  div.scrollTop = div.scrollHeight;
-}
-
-function addThinking() {
-  const id = 'think-' + Date.now();
-  const div = document.getElementById('msgs');
-  const wrap = document.createElement('div');
-  wrap.className = 'msg bot thinking'; wrap.id = id;
-  wrap.innerHTML = '<div class="bubble"><span></span><span></span><span></span></div>';
-  div.appendChild(wrap);
-  div.scrollTop = div.scrollHeight;
-  return id;
-}
-
-function removeThinking(id) { document.getElementById(id)?.remove(); }
-
-function setStateLbl(t, active=false) {
-  const el = document.getElementById('stateLbl');
-  el.textContent = t;
-  el.className = 'state-lbl' + (active ? ' active' : '');
-}
-
-function setDot(state) {
-  const d = document.getElementById('statusDot');
-  d.className = 'status-dot' + (state ? ' '+state : '');
-}
-
-function updateMacStatus(online) {
-  macOnline = online;
-  const badge = document.getElementById('macBadge');
-  const label = document.getElementById('macLabel');
-  badge.className = 'mac-badge' + (online ? ' online' : '');
-  label.textContent = online ? 'Mac conectado' : 'Mac desconectado';
-  setDot(online ? 'on' : '');
+async function checkStatus(){
+  if(!serverUrl) return;
+  try{
+    const r=await fetch(serverUrl.replace(/\/$/,'')+'/api/status');
+    if(r.ok){const d=await r.json();updateMac(d.mac_online);}
+  }catch(e){}
 }
 
 // ── Config ────────────────────────────────────────────────────────────────────
-function openCfg() {
-  document.getElementById('cfgUrl').value    = serverUrl;
-  document.getElementById('cfgSecret').value = secret;
+function openCfg(){
+  document.getElementById('cfgUrl').value=serverUrl;
+  document.getElementById('cfgSecret').value=secret;
   document.getElementById('cfgOverlay').classList.add('open');
 }
-function closeCfg() { document.getElementById('cfgOverlay').classList.remove('open'); }
+function closeCfg(){document.getElementById('cfgOverlay').classList.remove('open');}
+function showCfgError(msg){const e=document.getElementById('cfgError');e.textContent=msg;e.style.display='block';}
 
-function saveConfig() {
-  serverUrl = document.getElementById('cfgUrl').value.trim();
-  secret    = document.getElementById('cfgSecret').value.trim();
-  localStorage.setItem('yarvis_url', serverUrl);
-  localStorage.setItem('yarvis_secret', secret);
+function saveConfig(){
+  const url=document.getElementById('cfgUrl').value.trim();
+  const sec=document.getElementById('cfgSecret').value.trim();
+  if(!url){showCfgError('Introduce la URL del servidor');return;}
+  serverUrl=url; secret=sec;
+  localStorage.setItem('yarvis_url',url);
+  localStorage.setItem('yarvis_secret',sec);
   closeCfg();
-  if (serverUrl) {
-    addMsg('bot', '✓ Configuración guardada. Ya puedes hablar con Yarvis.');
-    checkStatus();
-  }
+  showResponse('Sistema conectado. Toca el orb y di "Yarvis".');
+  checkStatus();
 }
 
-async function checkStatus() {
-  if (!serverUrl) return;
-  try {
-    const r = await fetch(serverUrl.replace(/\/$/, '') + '/api/status');
-    if (r.ok) {
-      const d = await r.json();
-      updateMacStatus(d.mac_online);
-    }
-  } catch(e) {}
-}
-
-// Init
-if (window.speechSynthesis) {
-  speechSynthesis.getVoices();
-  speechSynthesis.addEventListener('voiceschanged', () => {}, {once:true});
-}
-if (serverUrl) checkStatus();
-else setTimeout(openCfg, 800);
-setInterval(checkStatus, 30000);
-
-// Close config on backdrop click
-document.getElementById('cfgOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeCfg();
+document.getElementById('cfgOverlay').addEventListener('click',function(e){
+  if(e.target===this) closeCfg();
 });
+
+if(window.speechSynthesis){
+  speechSynthesis.getVoices();
+  speechSynthesis.addEventListener('voiceschanged',()=>{},{once:true});
+}
+
+if(!serverUrl) setTimeout(openCfg, 700);
+else { checkStatus(); showResponse('Toca el orb y di "Yarvis" para activar.'); }
+setInterval(checkStatus, 30000);
 </script>
 </body>
 </html>
