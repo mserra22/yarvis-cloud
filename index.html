@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yarvis">
+<meta name="theme-color" content="#000">
+<link rel="manifest" href="/manifest.json">
+<title>YARVIS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#000;font-family:'Orbitron',monospace}
+
+/* Fondo animado CSS puro */
+#bg{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse at 50% 60%,#020d1a 0%,#000 70%)}
+#bg::before{content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 20% 80%,rgba(0,80,160,.08) 0%,transparent 50%),
+    radial-gradient(circle at 80% 20%,rgba(0,160,120,.06) 0%,transparent 50%),
+    radial-gradient(circle at 50% 50%,rgba(0,100,200,.05) 0%,transparent 60%)}
+
+/* Grid HUD */
+#grid{position:fixed;inset:0;z-index:0;opacity:.04;
+  background-image:
+    linear-gradient(rgba(0,212,255,.8) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,.8) 1px,transparent 1px);
+  background-size:60px 60px}
+
+/* Línea de escaneo */
+#scan{position:fixed;left:0;right:0;height:1px;z-index:1;
+  background:linear-gradient(90deg,transparent 0%,rgba(0,212,255,.3) 50%,transparent 100%);
+  animation:scanAnim 10s linear infinite;pointer-events:none}
+@keyframes scanAnim{0%{top:-2px;opacity:0}5%{opacity:1}95%{opacity:.5}100%{top:100%,opacity:0}}
+
+#particles{position:fixed;inset:0;z-index:1;pointer-events:none}
+
+.app{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* Logo */
+.logo{position:absolute;top:calc(24px + env(safe-area-inset-top,0px));
+  left:0;right:0;text-align:center;font-size:12px;font-weight:900;
+  letter-spacing:.5em;color:rgba(0,212,255,.3);transition:all .5s}
+.logo.on{color:rgba(0,212,255,.8);text-shadow:0 0 20px rgba(0,212,255,.4)}
+
+/* Subtítulo estado — único texto visible */
+.sub{position:absolute;top:calc(46px + env(safe-area-inset-top,0px));
+  left:0;right:0;text-align:center;font-size:7px;letter-spacing:.3em;
+  color:rgba(0,212,255,.2);transition:color .4s;text-transform:uppercase}
+.sub.on{color:rgba(0,212,255,.5)}
+
+/* Config btn */
+.cfg-btn{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));right:18px;
+  width:30px;height:30px;border-radius:50%;background:rgba(0,212,255,.04);
+  border:1px solid rgba(0,212,255,.1);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;z-index:10;transition:all .2s}
+.cfg-btn:active{background:rgba(0,212,255,.15)}
+.cfg-btn svg{width:13px;height:13px;color:rgba(0,212,255,.3)}
+
+/* Orb */
+.orb-wrap{position:relative;width:300px;height:300px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+.ring{position:absolute;border-radius:50%;transition:all .5s ease}
+.r1{inset:0;border:1px solid rgba(0,212,255,.08);border-top-color:rgba(0,212,255,.3);
+  animation:sp 18s linear infinite}
+.r2{inset:20px;border:1px dashed rgba(0,100,200,.07);border-right-color:rgba(0,150,255,.2);
+  animation:sp 11s linear infinite reverse}
+.r3{inset:42px;border:1px solid rgba(0,212,255,.05);border-bottom-color:rgba(0,255,160,.15);
+  animation:sp 26s linear infinite}
+.r4{inset:64px;border:1px dashed rgba(0,212,255,.04);border-left-color:rgba(0,212,255,.1);
+  animation:sp 8s linear infinite reverse}
+
+/* Puntos en anillos */
+.r1::before,.r1::after{content:'';position:absolute;width:5px;height:5px;
+  border-radius:50%;background:rgba(0,212,255,.5);top:-3px;left:calc(50% - 2.5px)}
+.r1::after{top:auto;bottom:-3px;background:rgba(0,212,255,.25)}
+.r2::before{content:'';position:absolute;width:3px;height:3px;border-radius:50%;
+  background:rgba(0,150,255,.4);right:-2px;top:calc(50% - 1.5px)}
+
+/* Estados */
+.orb-wrap.on  .r1{border-top-color:#00d4ff;border-width:1.5px;box-shadow:0 0 25px rgba(0,212,255,.1)}
+.orb-wrap.on  .r2{border-right-color:rgba(0,212,255,.4)}
+.orb-wrap.on  .r3{animation-duration:12s}
+.orb-wrap.cmd .r1{border-top-color:#00ffaa;border-width:1.5px;box-shadow:0 0 25px rgba(0,255,170,.12)}
+.orb-wrap.cmd .r1::before,.orb-wrap.cmd .r1::after{background:#00ffaa}
+.orb-wrap.cmd .r4{animation-duration:3s}
+.orb-wrap.pro .r4{border-left-color:#ffaa00;animation-duration:1.5s}
+.orb-wrap.spe .r1{border-top-color:#bb88ff;border-width:1.5px;box-shadow:0 0 30px rgba(187,136,255,.15);animation-duration:5s}
+.orb-wrap.spe .r2{border-right-color:rgba(187,136,255,.4);animation-duration:3s}
+
+/* Núcleo */
+.orb-core{position:relative;width:115px;height:115px;border-radius:50%;
+  background:radial-gradient(circle,#061018 35%,#020608 100%);
+  border:1.5px solid rgba(0,212,255,.15);overflow:hidden;transition:all .4s}
+.orb-wrap.on  .orb-core{border-color:rgba(0,212,255,.6);
+  box-shadow:0 0 50px rgba(0,212,255,.25),0 0 100px rgba(0,212,255,.08),inset 0 0 30px rgba(0,212,255,.06)}
+.orb-wrap.cmd .orb-core{border-color:rgba(0,255,170,.6);
+  box-shadow:0 0 50px rgba(0,255,170,.25),inset 0 0 30px rgba(0,255,170,.06)}
+.orb-wrap.pro .orb-core{border-color:rgba(100,160,255,.5);
+  box-shadow:0 0 30px rgba(100,160,255,.2)}
+.orb-wrap.spe .orb-core{border-color:rgba(187,136,255,.65);
+  box-shadow:0 0 60px rgba(187,136,255,.3),inset 0 0 35px rgba(187,136,255,.08)}
+
+#wc{position:absolute;inset:0;width:100%;height:100%}
+
+.pulse{position:absolute;inset:0;border-radius:50%;opacity:0;pointer-events:none}
+.orb-wrap.on  .pulse{animation:glw 2.5s ease-in-out infinite;
+  background:radial-gradient(circle,rgba(0,212,255,.12) 0%,transparent 70%)}
+.orb-wrap.spe .pulse{animation:glw .75s ease-in-out infinite;
+  background:radial-gradient(circle,rgba(187,136,255,.18) 0%,transparent 70%)}
+.orb-wrap.cmd .pulse{animation:glw 1.2s ease-in-out infinite;
+  background:radial-gradient(circle,rgba(0,255,170,.1) 0%,transparent 70%)}
+
+/* Indicadores */
+.dots{position:absolute;bottom:calc(60px + env(safe-area-inset-bottom,0px));
+  display:flex;gap:10px;align-items:center}
+.d{width:4px;height:4px;border-radius:50%;background:rgba(0,212,255,.12);transition:all .3s}
+.d.on{background:rgba(0,212,255,.85);box-shadow:0 0 6px rgba(0,212,255,.5)}
+.d.blink{animation:bl 1s ease-in-out infinite}
+.d.lg{width:6px;height:6px}
+
+.mac-dot{position:absolute;bottom:calc(26px + env(safe-area-inset-bottom,0px));
+  width:5px;height:5px;border-radius:50%;
+  background:rgba(255,255,255,.07);transition:all .4s}
+.mac-dot.on{background:rgba(0,255,140,.7);box-shadow:0 0 8px rgba(0,255,140,.4);
+  animation:bl 3s ease-in-out infinite}
+
+/* Config overlay */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);
+  z-index:100;flex-direction:column;justify-content:flex-end}
+.ov.open{display:flex}
+.sheet{padding:28px 20px;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid rgba(0,212,255,.12);position:relative}
+.sh-title{font-size:9px;letter-spacing:.4em;color:rgba(0,212,255,.55);
+  margin-bottom:22px;text-align:center}
+.field{margin-bottom:14px}
+.lbl{font-size:8px;color:rgba(0,212,255,.28);letter-spacing:.2em;margin-bottom:6px}
+.inp{width:100%;background:rgba(0,212,255,.03);border:1px solid rgba(0,212,255,.1);
+  padding:11px 14px;color:rgba(0,212,255,.8);font-size:12px;
+  font-family:'Orbitron',monospace;outline:none;-webkit-appearance:none;
+  transition:border-color .2s}
+.inp:focus{border-color:rgba(0,212,255,.35)}
+.inp::placeholder{color:rgba(0,212,255,.15)}
+.btn-save{width:100%;padding:13px;background:rgba(0,212,255,.07);
+  border:1px solid rgba(0,212,255,.25);color:rgba(0,212,255,.85);
+  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.25em;
+  cursor:pointer;margin-top:10px;transition:all .2s}
+.btn-save:active{background:rgba(0,212,255,.18)}
+.x-btn{position:absolute;top:14px;right:16px;background:none;
+  border:1px solid rgba(0,212,255,.15);color:rgba(0,212,255,.3);
+  width:26px;height:26px;cursor:pointer;font-size:12px;
+  display:flex;align-items:center;justify-content:center}
+
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes glw{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes bl{0%,100%{opacity:.25}50%{opacity:1}}
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div id="grid"></div>
+<div id="scan"></div>
+<canvas id="particles"></canvas>
+
+<div class="app">
+  <div class="logo" id="logo">YARVIS</div>
+  <div class="sub" id="sub">En espera</div>
+
+  <button class="cfg-btn" onclick="openCfg()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+  </button>
+
+  <div class="orb-wrap" id="orb" onclick="orbClick()">
+    <div class="ring r1"></div>
+    <div class="ring r2"></div>
+    <div class="ring r3"></div>
+    <div class="ring r4"></div>
+    <div class="orb-core">
+      <canvas id="wc"></canvas>
+      <div class="pulse"></div>
+    </div>
+  </div>
+
+  <div class="dots">
+    <div class="d" id="d1"></div>
+    <div class="d lg" id="d2"></div>
+    <div class="d" id="d3"></div>
+  </div>
+  <div class="mac-dot" id="mac"></div>
+</div>
+
+<!-- Config -->
+<div class="ov" id="ov">
+  <div class="sheet">
+    <button class="x-btn" onclick="closeOv()">✕</button>
+    <div class="sh-title">// SYSTEM CONFIGURATION</div>
+    <div class="field">
+      <div class="lbl">RAILWAY SERVER URL</div>
+      <input class="inp" id="cfgUrl" type="url" placeholder="https://xxx.up.railway.app">
+    </div>
+    <div class="field">
+      <div class="lbl">ACCESS KEY (YARVIS_SECRET)</div>
+      <input class="inp" id="cfgSecret" type="password" placeholder="••••••••••">
+    </div>
+    <button class="btn-save" onclick="saveCfg()">// INITIALIZE SYSTEM</button>
+  </div>
+</div>
+
+<script>
+const SID='y-'+(localStorage.getItem('ysid')||(() => {const s=Math.random().toString(36).slice(2,8);localStorage.setItem('ysid',s);return s;})());
+let serverUrl=localStorage.getItem('yurl')||'';
+let secret=localStorage.getItem('ysec')||'';
+let busy=false,wakeOn=false,cmdMode=false,cmdTimer=null;
+const WAKE=['yarvis','jarvis','yarbi','jarbi'];
+
+// ── Partículas ────────────────────────────────────────────────────────────────
+const pc=document.getElementById('particles'),px=pc.getContext('2d');
+let pts=[];
+function initPts(){pc.width=innerWidth;pc.height=innerHeight;
+  pts=Array.from({length:60},()=>({x:Math.random()*pc.width,y:Math.random()*pc.height,
+    r:Math.random()*.8+.2,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,a:Math.random()*.35+.05}));}
+function drawPts(){px.clearRect(0,0,pc.width,pc.height);
+  pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=pc.width;if(p.x>pc.width)p.x=0;
+    if(p.y<0)p.y=pc.height;if(p.y>pc.height)p.y=0;
+    px.beginPath();px.arc(p.x,p.y,p.r,0,Math.PI*2);
+    px.fillStyle=`rgba(0,212,255,${p.a})`;px.fill();});
+  requestAnimationFrame(drawPts);}
+window.addEventListener('resize',initPts);initPts();drawPts();
+
+// ── Waveform ──────────────────────────────────────────────────────────────────
+const wc=document.getElementById('wc'),wctx=wc.getContext('2d');
+let waf,analyser,darr,actx;
+function resizeWC(){const c=document.querySelector('.orb-core');wc.width=c.offsetWidth;wc.height=c.offsetHeight;}
+function drawIdle(){resizeWC();const W=wc.width,H=wc.height,t=Date.now()/1000;
+  wctx.clearRect(0,0,W,H);
+  [8,15,23,31].forEach((r,i)=>{const p=Math.sin(t*.9+i*1.1)*1.5;
+    wctx.strokeStyle=`rgba(0,212,255,${.04+i*.02})`;wctx.lineWidth=.8;
+    wctx.beginPath();wctx.arc(W/2,H/2,r+p,0,Math.PI*2);wctx.stroke();});
+  waf=requestAnimationFrame(drawIdle);}
+function drawWave(col){if(!analyser)return;analyser.getByteTimeDomainData(darr);
+  resizeWC();const W=wc.width,H=wc.height;wctx.clearRect(0,0,W,H);
+  wctx.strokeStyle=col;wctx.lineWidth=1.5;wctx.beginPath();
+  const sw=W/darr.length;let x=0;
+  for(let i=0;i<darr.length;i++){const y=(darr[i]/128)*(H/2);
+    i===0?wctx.moveTo(x,y):wctx.lineTo(x,y);x+=sw;}
+  wctx.lineTo(W,H/2);wctx.stroke();waf=requestAnimationFrame(()=>drawWave(col));}
+async function initAudio(){if(actx)return;
+  try{const s=await navigator.mediaDevices.getUserMedia({audio:true});
+    actx=new AudioContext();analyser=actx.createAnalyser();analyser.fftSize=256;
+    darr=new Uint8Array(analyser.frequencyBinCount);
+    actx.createMediaStreamSource(s).connect(analyser);}catch(e){}}
+
+// ── Estado ────────────────────────────────────────────────────────────────────
+const SUBS={'':"En espera",on:"Escuchando — di Yarvis",
+  cmd:"Escuchando orden...",pro:"Procesando...",spe:"Respondiendo..."};
+function setS(s){
+  document.getElementById('orb').className='orb-wrap'+(s?' '+s:'');
+  document.getElementById('logo').className='logo'+(s&&s!=='')?' on':'');
+  document.getElementById('sub').textContent=SUBS[s]||'';
+  document.getElementById('sub').className='sub'+(s?' on':'');
+  const [d1,d2,d3]=[document.getElementById('d1'),document.getElementById('d2'),document.getElementById('d3')];
+  [d1,d2,d3].forEach(d=>d.className=d.id==='d2'?'d lg':'d');
+  if(s==='on'){d2.classList.add('on','blink');}
+  else if(s==='cmd'){d1.classList.add('on');d2.classList.add('on','blink');}
+  else if(s==='pro'){d1.classList.add('on');d2.classList.add('on');d3.classList.add('on','blink');}
+  else if(s==='spe'){d1.classList.add('on');d2.classList.add('on');d3.classList.add('on');}
+  cancelAnimationFrame(waf);
+  if(s==='on')drawWave('rgba(0,212,255,.6)');
+  else if(s==='cmd')drawWave('rgba(0,255,170,.65)');
+  else if(s==='spe')drawWave('rgba(187,136,255,.75)');
+  else drawIdle();}
+
+// ── Audio ─────────────────────────────────────────────────────────────────────
+function speakFallback(text){
+  return new Promise(res=>{
+    if(!window.speechSynthesis){res();return;}
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text.slice(0,400));
+    const vs=speechSynthesis.getVoices();
+    const prefs=[
+      v=>v.lang==='es-ES'&&/jorge|pablo|diego/i.test(v.name),
+      v=>v.lang.startsWith('es')&&!/lucia|monica|female/i.test(v.name),
+      v=>/daniel/i.test(v.name)&&v.lang==='en-GB',
+      v=>v.lang==='en-GB',
+    ];
+    for(const fn of prefs){const v=vs.find(fn);if(v){u.voice=v;break;}}
+    u.lang='es-ES';u.pitch=0.7;u.rate=0.88;u.volume=1;
+    u.onend=res;u.onerror=res;speechSynthesis.speak(u);setTimeout(res,20000);});}
+
+function playB64(b64){
+  return new Promise(res=>{
+    try{
+      const bytes=atob(b64),buf=new Uint8Array(bytes.length);
+      for(let i=0;i<bytes.length;i++)buf[i]=bytes.charCodeAt(i);
+      const blob=new Blob([buf],{type:'audio/mpeg'});
+      const burl=URL.createObjectURL(blob);
+      const audio=new Audio(burl);
+      audio.onended=()=>{URL.revokeObjectURL(burl);res();};
+      audio.onerror=()=>{URL.revokeObjectURL(burl);res();};
+      audio.play().catch(()=>{URL.revokeObjectURL(burl);res();});
+    }catch(e){res();}});}
+
+async function speak(text,b64){
+  setS('spe');
+  if(b64)await playB64(b64);
+  else await speakFallback(text);
+  setS(wakeOn?'on':'');}
+
+// ── Speech Recognition ────────────────────────────────────────────────────────
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null;
+
+function startListen(){
+  if(!SR)return;stopRec();
+  rec=new SR();rec.lang='es-ES';rec.continuous=true;rec.interimResults=true;
+  rec.onstart=()=>{wakeOn=true;initAudio();setS('on');};
+  rec.onresult=e=>{
+    let fin='',int='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;e.results[i].isFinal?fin+=t:int+=t;}
+    const txt=(fin||int).toLowerCase().trim();
+    if(!cmdMode){
+      if(WAKE.some(w=>txt.includes(w))){
+        cmdMode=true;setS('cmd');
+        speak('Dime',null);cmdTimer&&clearTimeout(cmdTimer);}}
+    else{
+      let cl=txt;WAKE.forEach(w=>{cl=cl.replace(new RegExp(w,'gi'),'').trim();});
+      if(fin&&cl.length>1){
+        cmdTimer&&clearTimeout(cmdTimer);const cap=cl;
+        cmdTimer=setTimeout(()=>{if(!busy){cmdMode=false;processCmd(cap);}},1100);}}};
+  rec.onerror=e=>{if(e.error==='not-allowed'){stopRec();return;}if(wakeOn)setTimeout(startListen,800);};
+  rec.onend=()=>{if(wakeOn)setTimeout(startListen,300);};
+  try{rec.start();}catch(e){setTimeout(startListen,500);}
+}
+function stopRec(){wakeOn=false;cmdMode=false;try{rec&&rec.stop();}catch(e){}rec=null;setS('');}
+function orbClick(){if(!serverUrl){openCfg();return;}if(wakeOn)stopRec();else startListen();}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function processCmd(text){
+  if(!serverUrl||busy)return;busy=true;setS('pro');
+  try{
+    const res=await fetch(serverUrl.replace(/\/$/,'')+'/api/chat',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:text,session_id:SID,secret})});
+    if(!res.ok){
+      const err=await res.json().catch(()=>({detail:res.statusText}));
+      if(res.status===401){openCfg();return;}
+      await speak('Error del servidor: '+(err.detail||res.status),null);return;}
+    const data=await res.json();
+    updateMac(data.mac_online);
+    await speak(data.reply,data.audio_b64||null);
+  }catch(e){
+    await speak('No puedo conectar con el servidor.',null);
+  }finally{busy=false;if(wakeOn)setS('on');}
+}
+
+function updateMac(on){document.getElementById('mac').className='mac-dot'+(on?' on':'');}
+
+async function checkStatus(){
+  if(!serverUrl)return;
+  try{const r=await fetch(serverUrl.replace(/\/$/,'')+'/api/status');
+    if(r.ok){const d=await r.json();updateMac(d.mac_online);}}catch(e){}}
+
+// ── Config ────────────────────────────────────────────────────────────────────
+function openCfg(){document.getElementById('cfgUrl').value=serverUrl;document.getElementById('cfgSecret').value=secret;document.getElementById('ov').classList.add('open');}
+function closeOv(){document.getElementById('ov').classList.remove('open');}
+function saveCfg(){
+  serverUrl=document.getElementById('cfgUrl').value.trim();
+  secret=document.getElementById('cfgSecret').value.trim();
+  localStorage.setItem('yurl',serverUrl);localStorage.setItem('ysec',secret);
+  closeOv();checkStatus();
+  setTimeout(()=>speak('Sistema configurado. Toca el orb para activar.',null),300);}
+document.getElementById('ov').addEventListener('click',e=>{if(e.target===document.getElementById('ov'))closeOv();});
+
+if(window.speechSynthesis){speechSynthesis.getVoices();
+  speechSynthesis.addEventListener('voiceschanged',()=>{},{once:true});}
+resizeWC();drawIdle();
+if(!serverUrl)setTimeout(openCfg,700);
+else{checkStatus();setTimeout(()=>speak('Yarvis en línea.',null),800);}
+setInterval(checkStatus,30000);
+</script>
+</body>
+</html>
