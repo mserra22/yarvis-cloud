@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yarvis">
+<meta name="theme-color" content="#000">
+<link rel="manifest" href="/manifest.json">
+<title>YARVIS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#000;font-family:'Orbitron',monospace}
+
+#bg{position:fixed;inset:0;z-index:0;background:#000}
+#bg-img{position:absolute;inset:-10%;width:120%;height:120%;
+  background-size:cover;background-position:center;
+  filter:blur(20px) brightness(.22) saturate(1.5);
+  transition:opacity 2s ease;opacity:0}
+#bg-img.show{opacity:1}
+#vignette{position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,transparent 20%,rgba(0,0,0,.9) 100%)}
+
+#particles{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.35}
+
+.app{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+
+.logo{position:absolute;top:calc(22px + env(safe-area-inset-top,0px));
+  left:0;right:0;text-align:center;font-size:13px;font-weight:900;
+  letter-spacing:.45em;color:rgba(0,212,255,.35);transition:all .5s}
+.logo.on{color:rgba(0,212,255,.85);text-shadow:0 0 25px rgba(0,212,255,.5)}
+
+.cfg-btn{position:absolute;top:calc(18px + env(safe-area-inset-top,0px));right:18px;
+  width:30px;height:30px;border-radius:50%;background:rgba(0,212,255,.05);
+  border:1px solid rgba(0,212,255,.12);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;z-index:10}
+.cfg-btn svg{width:13px;height:13px;color:rgba(0,212,255,.3)}
+
+/* Orb */
+.orb-wrap{position:relative;width:280px;height:280px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+.ring{position:absolute;border-radius:50%}
+.r1{inset:0;border:1px solid rgba(0,212,255,.1);border-top-color:rgba(0,212,255,.35);
+  animation:sp 16s linear infinite}
+.r2{inset:22px;border:1px dashed rgba(0,130,255,.08);border-right-color:rgba(0,130,255,.25);
+  animation:sp 10s linear infinite reverse}
+.r3{inset:44px;border:1px solid rgba(0,212,255,.05);border-bottom-color:rgba(0,255,180,.15);
+  animation:sp 22s linear infinite}
+.r4{inset:66px;border:1px dashed rgba(0,212,255,.04);border-left-color:rgba(0,212,255,.12);
+  animation:sp 7s linear infinite reverse}
+
+/* Dots on ring1 */
+.r1::before,.r1::after{content:'';position:absolute;width:5px;height:5px;
+  border-radius:50%;background:rgba(0,212,255,.6);top:-3px;left:calc(50% - 2.5px)}
+.r1::after{top:auto;bottom:-3px;background:rgba(0,212,255,.3)}
+
+/* Active states */
+.orb-wrap.on  .r1{border-top-color:#00d4ff;box-shadow:0 0 20px rgba(0,212,255,.12)}
+.orb-wrap.on  .r2{border-right-color:#00d4ff}
+.orb-wrap.cmd .r1{border-top-color:#00ffaa;box-shadow:0 0 20px rgba(0,255,170,.15);animation-duration:6s}
+.orb-wrap.cmd .r2{border-right-color:#00ffaa}
+.orb-wrap.spe .r1{border-top-color:#cc88ff;box-shadow:0 0 30px rgba(200,136,255,.2);animation-duration:4s}
+.orb-wrap.spe .r2{border-right-color:#cc88ff;animation-duration:3s}
+.orb-wrap.pro .r4{border-left-color:#ffaa00;animation-duration:2s}
+
+/* Core */
+.orb-core{position:relative;width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle,#071020 40%,#020508 100%);
+  border:1.5px solid rgba(0,212,255,.18);overflow:hidden;
+  transition:border-color .4s,box-shadow .4s}
+.orb-wrap.on  .orb-core{border-color:rgba(0,212,255,.55);
+  box-shadow:0 0 40px rgba(0,212,255,.25),inset 0 0 25px rgba(0,212,255,.06)}
+.orb-wrap.cmd .orb-core{border-color:rgba(0,255,170,.55);
+  box-shadow:0 0 40px rgba(0,255,170,.25),inset 0 0 25px rgba(0,255,170,.06)}
+.orb-wrap.spe .orb-core{border-color:rgba(200,136,255,.6);
+  box-shadow:0 0 50px rgba(200,136,255,.3),inset 0 0 30px rgba(200,136,255,.08)}
+.orb-wrap.pro .orb-core{border-color:rgba(100,150,255,.45);
+  box-shadow:0 0 30px rgba(100,150,255,.2)}
+
+#wc{position:absolute;inset:0;width:100%;height:100%}
+
+.pulse{position:absolute;inset:0;border-radius:50%;opacity:0}
+.orb-wrap.on  .pulse{animation:glow 2.5s ease-in-out infinite;
+  background:radial-gradient(circle,rgba(0,212,255,.15) 0%,transparent 70%)}
+.orb-wrap.spe .pulse{animation:glow .7s ease-in-out infinite;
+  background:radial-gradient(circle,rgba(200,136,255,.2) 0%,transparent 70%)}
+
+/* Dots estado */
+.dots{position:absolute;bottom:calc(55px + env(safe-area-inset-bottom,0px));
+  display:flex;gap:8px}
+.d{width:4px;height:4px;border-radius:50%;background:rgba(0,212,255,.15);transition:all .3s}
+.d.on{background:rgba(0,212,255,.8);box-shadow:0 0 6px rgba(0,212,255,.5)}
+.d.blink{animation:bl 1s ease-in-out infinite}
+
+/* Dot Mac */
+.mac{position:absolute;bottom:calc(22px + env(safe-area-inset-bottom,0px));
+  width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.08);transition:all .4s}
+.mac.on{background:rgba(0,255,170,.7);box-shadow:0 0 8px rgba(0,255,170,.4);
+  animation:bl 3s ease-in-out infinite}
+
+/* Config */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.94);
+  z-index:100;flex-direction:column;justify-content:flex-end}
+.ov.open{display:flex}
+.sheet{padding:28px 20px;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid rgba(0,212,255,.15);position:relative}
+.sh-title{font-size:9px;letter-spacing:.4em;color:rgba(0,212,255,.6);
+  margin-bottom:22px;text-align:center}
+.field{margin-bottom:14px}
+.lbl{font-size:8px;color:rgba(0,212,255,.3);letter-spacing:.2em;margin-bottom:5px}
+.inp{width:100%;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);
+  padding:11px 14px;color:rgba(0,212,255,.8);font-size:12px;
+  font-family:'Orbitron',monospace;outline:none;-webkit-appearance:none}
+.inp:focus{border-color:rgba(0,212,255,.35)}
+.inp::placeholder{color:rgba(0,212,255,.18)}
+.btn-save{width:100%;padding:13px;background:rgba(0,212,255,.07);
+  border:1px solid rgba(0,212,255,.28);color:rgba(0,212,255,.85);
+  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.25em;
+  cursor:pointer;margin-top:10px}
+.btn-save:active{background:rgba(0,212,255,.18)}
+.x{position:absolute;top:14px;right:16px;background:none;
+  border:1px solid rgba(0,212,255,.18);color:rgba(0,212,255,.35);
+  width:26px;height:26px;cursor:pointer;font-size:12px;
+  display:flex;align-items:center;justify-content:center}
+
+@keyframes sp{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{opacity:.3;transform:scale(.85)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes bl{0%,100%{opacity:.3}50%{opacity:1}}
+</style>
+</head>
+<body>
+
+<div id="bg"><div id="bg-img"></div><div id="vignette"></div></div>
+<canvas id="particles"></canvas>
+
+<div class="app">
+  <div class="logo" id="logo">YARVIS</div>
+  <button class="cfg-btn" onclick="openCfg()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+  </button>
+
+  <div class="orb-wrap" id="orb" onclick="orbClick()">
+    <div class="ring r1"></div>
+    <div class="ring r2"></div>
+    <div class="ring r3"></div>
+    <div class="ring r4"></div>
+    <div class="orb-core">
+      <canvas id="wc"></canvas>
+      <div class="pulse"></div>
+    </div>
+  </div>
+
+  <div class="dots">
+    <div class="d" id="d1"></div>
+    <div class="d" id="d2"></div>
+    <div class="d" id="d3"></div>
+  </div>
+  <div class="mac" id="mac"></div>
+</div>
+
+<div class="ov" id="ov">
+  <div class="sheet">
+    <button class="x" onclick="closeOv()">✕</button>
+    <div class="sh-title">// SYSTEM CONFIGURATION</div>
+    <div class="field">
+      <div class="lbl">RAILWAY SERVER URL</div>
+      <input class="inp" id="cfgUrl" type="url" placeholder="https://xxx.up.railway.app">
+    </div>
+    <div class="field">
+      <div class="lbl">ACCESS KEY</div>
+      <input class="inp" id="cfgSecret" type="password" placeholder="••••••••••••">
+    </div>
+    <button class="btn-save" onclick="saveCfg()">// INITIALIZE SYSTEM</button>
+  </div>
+</div>
+
+<script>
+const SID = 'y-'+(localStorage.getItem('ysid')||(() => {const s=Math.random().toString(36).slice(2,8);localStorage.setItem('ysid',s);return s;})());
+let url    = localStorage.getItem('yurl')||'';
+let secret = localStorage.getItem('ysec')||'';
+let busy=false, wakeOn=false, cmdMode=false, cmdTimer=null;
+const WAKE = ['yarvis','jarvis','yarbi','jarbi'];
+
+// ── Partículas ────────────────────────────────────────────────────────────────
+const pc=document.getElementById('particles'),px=pc.getContext('2d');
+let pts=[];
+function initPts(){pc.width=innerWidth;pc.height=innerHeight;
+  pts=Array.from({length:55},()=>({x:Math.random()*pc.width,y:Math.random()*pc.height,
+    r:Math.random()*.7+.2,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,a:Math.random()*.4+.1}));}
+function drawPts(){px.clearRect(0,0,pc.width,pc.height);
+  pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=pc.width;if(p.x>pc.width)p.x=0;
+    if(p.y<0)p.y=pc.height;if(p.y>pc.height)p.y=0;
+    px.beginPath();px.arc(p.x,p.y,p.r,0,Math.PI*2);
+    px.fillStyle=`rgba(0,212,255,${p.a})`;px.fill();});
+  requestAnimationFrame(drawPts);}
+window.addEventListener('resize',initPts);initPts();drawPts();
+
+// ── Waveform ──────────────────────────────────────────────────────────────────
+const wc=document.getElementById('wc'),wctx=wc.getContext('2d');
+let waf,analyser,darr,actx;
+
+function resizeWC(){const c=document.querySelector('.orb-core');wc.width=c.offsetWidth;wc.height=c.offsetHeight;}
+function drawIdle(){resizeWC();const W=wc.width,H=wc.height,t=Date.now()/1000;
+  wctx.clearRect(0,0,W,H);
+  [10,17,24].forEach((r,i)=>{const p=Math.sin(t*1.1+i)*.8;
+    wctx.strokeStyle=`rgba(0,212,255,${.06+i*.025})`;wctx.lineWidth=1;
+    wctx.beginPath();wctx.arc(W/2,H/2,r+p,0,Math.PI*2);wctx.stroke();});
+  waf=requestAnimationFrame(drawIdle);}
+function drawWave(col){if(!analyser)return;analyser.getByteTimeDomainData(darr);
+  resizeWC();const W=wc.width,H=wc.height;wctx.clearRect(0,0,W,H);
+  wctx.strokeStyle=col;wctx.lineWidth=1.5;wctx.beginPath();
+  const sw=W/darr.length;let x=0;
+  for(let i=0;i<darr.length;i++){const y=(darr[i]/128)*(H/2);i===0?wctx.moveTo(x,y):wctx.lineTo(x,y);x+=sw;}
+  wctx.lineTo(W,H/2);wctx.stroke();waf=requestAnimationFrame(()=>drawWave(col));}
+async function initAudio(){if(actx)return;
+  try{const s=await navigator.mediaDevices.getUserMedia({audio:true});
+    actx=new AudioContext();analyser=actx.createAnalyser();analyser.fftSize=256;
+    darr=new Uint8Array(analyser.frequencyBinCount);
+    actx.createMediaStreamSource(s).connect(analyser);}catch(e){}}
+
+// ── Fondo ─────────────────────────────────────────────────────────────────────
+let lastImg='';
+function setBg(topic){
+  if(!topic||topic===lastImg)return;lastImg=topic;
+  const el=document.getElementById('bg-img');
+  el.classList.remove('show');
+  const u=`https://source.unsplash.com/featured/1080x1920/?${encodeURIComponent(topic)}`;
+  const i=new Image();i.onload=()=>{el.style.backgroundImage=`url(${u})`;setTimeout(()=>el.classList.add('show'),50);};
+  i.onerror=()=>{};i.src=u;}
+
+// ── Estado ────────────────────────────────────────────────────────────────────
+function setS(s){
+  document.getElementById('orb').className='orb-wrap'+(s?' '+s:'');
+  document.getElementById('logo').className='logo'+(s&&s!=='off'?' on':'');
+  const [d1,d2,d3]=[document.getElementById('d1'),document.getElementById('d2'),document.getElementById('d3')];
+  [d1,d2,d3].forEach(d=>d.className='d');
+  if(s==='on'){d1.className='d on blink';}
+  if(s==='cmd'){d1.className='d on';d2.className='d on blink';}
+  if(s==='pro'){d1.className='d on';d2.className='d on';d3.className='d blink';}
+  if(s==='spe'){d1.className='d on';d2.className='d on';d3.className='d on';}
+  cancelAnimationFrame(waf);
+  if(s==='on')drawWave('rgba(0,212,255,.65)');
+  else if(s==='cmd')drawWave('rgba(0,255,170,.65)');
+  else if(s==='spe')drawWave('rgba(200,136,255,.75)');
+  else drawIdle();}
+
+// ── Audio: ElevenLabs (b64) o fallback Web Speech ────────────────────────────
+function speakFallback(text){
+  return new Promise(res=>{
+    if(!window.speechSynthesis){res();return;}
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text.slice(0,400));
+    const vs=speechSynthesis.getVoices();
+    // Intentar la mejor voz masculina disponible
+    const pref=[
+      v=>v.lang==='es-ES'&&/jorge|pablo|diego/i.test(v.name),
+      v=>v.lang.startsWith('es')&&!/lucia|monica|female/i.test(v.name),
+      v=>/daniel|oliver/i.test(v.name)&&v.lang==='en-GB',
+      v=>v.lang==='en-GB',
+    ];
+    for(const fn of pref){const v=vs.find(fn);if(v){u.voice=v;break;}}
+    u.lang='es-ES';u.pitch=0.7;u.rate=0.88;u.volume=1;
+    u.onend=res;u.onerror=res;speechSynthesis.speak(u);
+    setTimeout(res,18000);});
+}
+
+function playAudioB64(b64){
+  return new Promise(res=>{
+    try{
+      const bytes=atob(b64);
+      const buf=new Uint8Array(bytes.length);
+      for(let i=0;i<bytes.length;i++)buf[i]=bytes.charCodeAt(i);
+      const blob=new Blob([buf],{type:'audio/mpeg'});
+      const burl=URL.createObjectURL(blob);
+      const audio=new Audio(burl);
+      audio.onended=()=>{URL.revokeObjectURL(burl);res();};
+      audio.onerror=()=>{URL.revokeObjectURL(burl);res();};
+      audio.play().catch(()=>{URL.revokeObjectURL(burl);res();});
+    }catch(e){res();}
+  });
+}
+
+async function speak(text, b64){
+  setS('spe');
+  if(b64){await playAudioB64(b64);}
+  else{await speakFallback(text);}
+  setS(wakeOn?'on':'');
+}
+
+// ── Speech Recognition ────────────────────────────────────────────────────────
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null;
+
+function startListen(){
+  if(!SR)return;stopRec();
+  rec=new SR();rec.lang='es-ES';rec.continuous=true;rec.interimResults=true;
+  rec.onstart=()=>{wakeOn=true;initAudio();setS('on');};
+  rec.onresult=e=>{
+    let fin='',int='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;e.results[i].isFinal?fin+=t:int+=t;}
+    const txt=(fin||int).toLowerCase().trim();
+    if(!cmdMode){
+      if(WAKE.some(w=>txt.includes(w))){
+        cmdMode=true;setS('cmd');speak('Dime');cmdTimer&&clearTimeout(cmdTimer);}
+    }else{
+      let cl=txt;WAKE.forEach(w=>{cl=cl.replace(new RegExp(w,'gi'),'').trim();});
+      if(fin&&cl.length>1){
+        cmdTimer&&clearTimeout(cmdTimer);const cap=cl;
+        cmdTimer=setTimeout(()=>{if(!busy){cmdMode=false;processCmd(cap);}},1100);}}};
+  rec.onerror=e=>{if(e.error==='not-allowed'){stopRec();return;}if(wakeOn)setTimeout(startListen,800);};
+  rec.onend=()=>{if(wakeOn)setTimeout(startListen,300);};
+  try{rec.start();}catch(e){setTimeout(startListen,500);}
+}
+
+function stopRec(){wakeOn=false;cmdMode=false;try{rec&&rec.stop();}catch(e){}rec=null;setS('');}
+function orbClick(){if(!url){openCfg();return;}if(wakeOn)stopRec();else startListen();}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function processCmd(text){
+  if(!url||busy)return;busy=true;setS('pro');
+  try{
+    const r=await fetch(url.replace(/\/$/,'')+'/api/chat',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:text,session_id:SID,secret})});
+    if(!r.ok){
+      const err=await r.json().catch(()=>({detail:r.statusText}));
+      if(r.status===401){openCfg();return;}
+      await speak('Error de conexión con el servidor.',null);return;}
+    const data=await r.json();
+    updateMac(data.mac_online);
+    if(data.image)setBg(data.image);
+    await speak(data.reply,data.audio_b64||null);
+  }catch(e){await speak('No puedo conectar con el servidor.',null);}
+  finally{busy=false;if(wakeOn)setS('on');}
+}
+
+function updateMac(on){document.getElementById('mac').className='mac'+(on?' on':'');}
+
+async function checkStatus(){if(!url)return;
+  try{const r=await fetch(url.replace(/\/$/,'')+'/api/status');
+    if(r.ok){const d=await r.json();updateMac(d.mac_online);}}catch(e){}}
+
+// ── Config ────────────────────────────────────────────────────────────────────
+function openCfg(){document.getElementById('cfgUrl').value=url;document.getElementById('cfgSecret').value=secret;document.getElementById('ov').classList.add('open');}
+function closeOv(){document.getElementById('ov').classList.remove('open');}
+function saveCfg(){
+  url=document.getElementById('cfgUrl').value.trim();
+  secret=document.getElementById('cfgSecret').value.trim();
+  localStorage.setItem('yurl',url);localStorage.setItem('ysec',secret);
+  closeOv();checkStatus();
+  setTimeout(()=>speak('Sistema configurado. Toca el orb para activar.',null),300);}
+document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)closeOv();});
+
+if(window.speechSynthesis){speechSynthesis.getVoices();
+  speechSynthesis.addEventListener('voiceschanged',()=>{},{once:true});}
+resizeWC();drawIdle();setBg('dark space futuristic technology');
+if(!url)setTimeout(openCfg,700);
+else{checkStatus();setTimeout(()=>speak('Yarvis en línea.',null),800);}
+setInterval(checkStatus,30000);
+</script>
+</body>
+</html>
