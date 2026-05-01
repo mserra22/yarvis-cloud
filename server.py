@@ -341,3 +341,4 @@ async def spa(path: str):
     p=find("index.html")
     if p: return FileResponse(str(p),media_type="text/html")
     raise HTTPException(404)
+
