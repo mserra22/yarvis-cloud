@@ -803,3 +803,5 @@ async def spa(path: str):
     if p:
         return FileResponse(str(p), media_type="text/html")
     raise HTTPException(404)
+
+    
